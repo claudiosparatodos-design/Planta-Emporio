@@ -70,7 +70,8 @@ router.post(
     const meetingId = int(req.body.meeting_id, { field: 'Reunión', min: 1 }) ?? null;
     const projectId = int(req.body.project_id, { field: 'Proyecto', min: 1 }) ?? null;
     if (projectId && !canViewProject(req.user, projectId)) throw new HttpError(400, 'El proyecto no existe.');
-    const approvers = (ids(req.body.approver_ids, 'Aprobadores') || []).filter((id) => db.get("SELECT 1 FROM users WHERE id = ? AND status = 'active'", id));
+    // Quien propone no puede aprobar su propia decisión.
+    const approvers = (ids(req.body.approver_ids, 'Aprobadores') || []).filter((id) => id !== req.user.id && db.get("SELECT 1 FROM users WHERE id = ? AND status = 'active'", id));
     // "Registrar como decidida" solo es posible sin aprobadores y es una confirmación explícita de quien la registra.
     const recordDecided = bool(req.body.record_as_decided) && approvers.length === 0;
     const id = transaction(() => {

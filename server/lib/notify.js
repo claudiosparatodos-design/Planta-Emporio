@@ -57,8 +57,8 @@ export function findMentions(text) {
     const first = `@${u.name.split(' ')[0].toLowerCase()}`;
     if (matchesWord(lower, full) || matchesWord(lower, first)) found.push(u.id);
   }
-  // Menciones explícitas generadas por el editor: @[Nombre](user:ID)
-  for (const m of text.matchAll(/\(user:(\d+)\)/g)) found.push(Number(m[1]));
+  // Menciones insertadas con el editor de documentos: {"target":"user:ID"}
+  for (const m of text.matchAll(/"target":"user:(\d+)"/g)) found.push(Number(m[1]));
   return [...new Set(found)];
 }
 

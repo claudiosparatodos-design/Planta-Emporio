@@ -129,8 +129,9 @@ router.get(
     // Páginas que mencionan a esta (enlaces internos dentro del contenido).
     const backlinks = db
       .all(
-        `SELECT pg.id, pg.title, pg.icon FROM pages pg WHERE pg.id <> ? AND pg.content LIKE ? AND ${pageVisibilitySql(req.user, 'pg')} LIMIT 20`,
+        `SELECT pg.id, pg.title, pg.icon FROM pages pg WHERE pg.id <> ? AND (pg.content LIKE ? OR pg.content LIKE ?) AND ${pageVisibilitySql(req.user, 'pg')} LIMIT 20`,
         page.id,
+        `%"target":"page:${page.id}"%`,
         `%/docs/${page.id}"%`,
       );
     res.json({

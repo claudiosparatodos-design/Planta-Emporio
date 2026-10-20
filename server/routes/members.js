@@ -52,11 +52,13 @@ router.patch(
   }),
 );
 
+const PREF_KEYS = ['theme', 'notifications', 'dashboard', 'sidebar', 'taskView', 'homeTab', 'projectView', 'financePeriod'];
+
 function mergePrefs(current, patch) {
   if (typeof patch !== 'object' || patch === null || Array.isArray(patch)) throw new HttpError(400, 'Preferencias inválidas.');
   const next = { ...current };
   for (const [k, v] of Object.entries(patch)) {
-    if (!['theme', 'notifications', 'dashboard', 'sidebar', 'taskView', 'density'].includes(k)) continue;
+    if (!PREF_KEYS.includes(k)) continue;
     next[k] = v && typeof v === 'object' && !Array.isArray(v) ? { ...(current[k] || {}), ...v } : v;
   }
   const size = JSON.stringify(next).length;
