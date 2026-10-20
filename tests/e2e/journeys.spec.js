@@ -270,6 +270,37 @@ test('11. papelera: eliminar y restaurar un proyecto', async ({ page }) => {
   await expect(page.locator('.card', { hasText: 'Proyecto temporal' })).toBeVisible();
 });
 
+test('13. edición simultánea: no se pierde trabajo y se avisa del conflicto', async ({ page, browser }) => {
+  await login(page, ADMIN);
+  const res = await page.request.post('/api/pages', { headers: { 'X-PE-Client': '1' }, data: { title: 'Plan compartido', content: [{ type: 'paragraph', content: 'Inicio' }] } });
+  const { id } = await res.json();
+  const ctx = await browser.newContext();
+  const p2 = await ctx.newPage();
+  await login(p2, MEMBER);
+  await page.goto(`/docs/${id}`);
+  await p2.goto(`/docs/${id}`);
+  // Ana edita mientras Beto no escribe: Beto recibe el cambio sin recargar.
+  await page.locator('.bn-editor p').first().click();
+  await page.keyboard.press('End');
+  await page.keyboard.type(' de Ana', { delay: 30 });
+  await expect(p2.locator('.bn-editor')).toContainText('Inicio de Ana', { timeout: 8000 });
+  // Ambos escriben a la vez: el segundo en guardar ve el aviso y su texto se conserva.
+  await p2.locator('.bn-editor p').first().click();
+  await p2.keyboard.press('End');
+  const typing = p2.keyboard.type(' y de Beto', { delay: 60 });
+  await page.waitForTimeout(200);
+  await page.keyboard.type(' otra vez', { delay: 10 });
+  await typing;
+  await expect(p2.locator('.save-state')).toContainText('Conflicto', { timeout: 8000 });
+  await expect(p2.locator('.bn-editor')).toContainText('y de Beto');
+  await p2.getByRole('button', { name: 'Guardar mi versión como copia' }).click();
+  await expect(p2.locator('.save-state')).toContainText('Guardado');
+  await expect(p2.locator('.bn-editor')).toContainText('otra vez');
+  const pages = await (await page.request.get('/api/pages')).json();
+  expect(pages.some((pg) => pg.title === 'Plan compartido (mi versión)')).toBe(true);
+  await ctx.close();
+});
+
 test.describe('móvil', () => {
   const { viewport, userAgent, deviceScaleFactor, isMobile, hasTouch } = devices['iPhone 13'];
   test.use({ viewport, userAgent, deviceScaleFactor, isMobile, hasTouch });
