@@ -41,12 +41,13 @@ function useSubmit(fn) {
 export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(false);
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const ws = qc.getQueryData(['auth'])?.workspace?.name;
   const { submit, error, loading } = useSubmit(async () => {
-    await api.post('/auth/login', { email, password });
+    await api.post('/auth/login', { email, password, remember });
     navigate(params.get('next') || '/', { replace: true });
   });
   return (
@@ -61,6 +62,11 @@ export function Login() {
         <Field label="Contraseña" htmlFor="password">
           <input id="password" className="input" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
         </Field>
+        <label className="check small mb-3" style={{ display: 'flex' }}>
+          <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+          Mantener la sesión iniciada en este equipo
+        </label>
+        <p className="faint tiny mb-3" style={{ marginTop: -6 }}>Déjalo sin marcar en computadoras prestadas o compartidas: la sesión se cierra al cerrar el navegador.</p>
         <Button type="submit" variant="primary" size="lg" block loading={loading}>Entrar</Button>
       </form>
       <div className="auth-foot">

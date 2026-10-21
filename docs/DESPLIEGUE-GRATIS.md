@@ -86,3 +86,17 @@ pierden: viven en Turso.
 
 Todo lo anterior es gratuito. Si en el futuro deciden pagar (por ejemplo, ~7 USD/mes por un servidor de
 Render que no se duerme), la aplicación funciona igual y Turso puede seguir guardando los datos.
+
+## Si usas una computadora prestada o compartida
+
+Toda la información vive en la nube (Render y Turso); en la computadora no se guarda nada de la empresa.
+Aun así, el navegador puede recordar cosas. Para no dejar rastro:
+
+- Abre una **ventana privada / de incógnito** para crear las cuentas y para entrar a la aplicación.
+- Al entrar, deja **sin marcar** «Mantener la sesión iniciada»: la sesión se cierra al cerrar el navegador
+  (y en el servidor caduca a las 12 horas de todos modos).
+- **No guardes las contraseñas** cuando el navegador lo ofrezca, ni descargues los tokens de Turso o Brevo a
+  archivos: cópialos y pégalos directamente en Render.
+- Al terminar, **cierra sesión** en la aplicación, en GitHub, Render, Turso y Brevo, y cierra el navegador.
+- Si olvidaste cerrar sesión, desde cualquier otro equipo ve a **Configuración → Mi perfil → Cerrar sesión en
+  todos los equipos**.

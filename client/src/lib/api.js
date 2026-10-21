@@ -83,4 +83,14 @@ export function uploadFiles(files, extra = {}, onProgress) {
   });
 }
 
+/** Borra las preferencias cosméticas guardadas en este navegador (tema, carpetas abiertas…). */
+export function clearLocalData() {
+  try {
+    Object.keys(localStorage).filter((k) => k.startsWith('pe:')).forEach((k) => localStorage.removeItem(k));
+    sessionStorage.clear();
+  } catch {
+    /* sin almacenamiento */
+  }
+}
+
 export const fileUrl = (id, download = false) => `/api/files/${id}/raw${download ? '?download=1' : ''}`;

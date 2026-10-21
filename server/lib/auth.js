@@ -29,9 +29,13 @@ export function validatePassword(password) {
 export const randomToken = () => crypto.randomBytes(32).toString('base64url');
 export const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 
-export function createSession(res, userId, userAgent = '') {
+/**
+ * remember=false (equipos prestados o compartidos): la cookie se borra al cerrar el navegador
+ * y la sesión caduca en el servidor a las 12 horas aunque el navegador siga abierto.
+ */
+export function createSession(res, userId, userAgent = '', { remember = true } = {}) {
   const token = randomToken();
-  const expires = new Date(Date.now() + config.sessionDays * 864e5);
+  const expires = new Date(Date.now() + (remember ? config.sessionDays * 864e5 : 12 * 3600e3));
   db.insert('sessions', {
     id: sha256(token),
     user_id: userId,
@@ -44,7 +48,7 @@ export function createSession(res, userId, userAgent = '') {
     httpOnly: true,
     sameSite: 'lax',
     secure: config.production && !process.env.INSECURE_COOKIES,
-    expires,
+    ...(remember ? { expires } : {}),
     path: '/',
   });
 }

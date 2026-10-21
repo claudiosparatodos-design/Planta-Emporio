@@ -125,3 +125,18 @@ test('cambio de contraseña requiere la actual', async () => {
   const login = await srv.client().post('/api/auth/login', { email: 'ana@example.test', password: 'otra-buena-123' });
   assert.equal(login.status, 200);
 });
+
+test('sesión sin "recordar": cookie de navegador y caducidad corta; cerrar todas las sesiones', async () => {
+  const c = srv.client();
+  const res = await c.request('POST', '/api/auth/login', { email: 'ana@example.test', password: 'otra-buena-123' }, { raw: true });
+  const cookieHeader = res.headers.get('set-cookie');
+  assert.ok(!/expires=/i.test(cookieHeader), 'sin recordar: la cookie se borra al cerrar el navegador');
+  c.cookie = cookieHeader.split(';')[0];
+  const r2 = await srv.client().request('POST', '/api/auth/login', { email: 'ana@example.test', password: 'otra-buena-123', remember: true }, { raw: true });
+  assert.match(r2.headers.get('set-cookie'), /expires=/i, 'con recordar: cookie persistente');
+  const other = srv.client();
+  await other.ok('POST', '/api/auth/login', { email: 'ana@example.test', password: 'otra-buena-123' });
+  const out = await c.ok('POST', '/api/auth/logout-all');
+  assert.ok(out.closed >= 2);
+  assert.equal((await other.get('/api/auth/me')).status, 401, 'las demás sesiones también se cerraron');
+});

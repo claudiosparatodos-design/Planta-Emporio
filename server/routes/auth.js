@@ -91,7 +91,7 @@ router.post(
       throw new HttpError(401, 'Correo o contraseña incorrectos.');
     }
     if (row.status !== 'active') throw new HttpError(403, 'Tu cuenta está desactivada. Habla con un administrador.');
-    createSession(res, row.id, req.get('user-agent'));
+    createSession(res, row.id, req.get('user-agent'), { remember: req.body.remember === true });
     res.json({ user: meResponse(loadUser(row.id)) });
   }),
 );
@@ -108,6 +108,17 @@ router.get(
   '/me',
   requireAuth,
   handler((req, res) => res.json({ user: meResponse(req.user) })),
+);
+
+/** Cierra todas las sesiones de la persona (por ejemplo, si olvidó salir en un equipo prestado). */
+router.post(
+  '/logout-all',
+  requireAuth,
+  handler((req, res) => {
+    const n = db.run('DELETE FROM sessions WHERE user_id = ?', req.user.id).changes;
+    destroySession(req, res);
+    res.json({ ok: true, closed: Number(n) });
+  }),
 );
 
 router.post(

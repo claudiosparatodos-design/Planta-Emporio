@@ -6,7 +6,7 @@ import {
   Plus, Users, Trash2, Gavel, Target, Paperclip, Sprout, ChevronDown, LogOut, Sun, Moon, Monitor, Menu as MenuIcon,
   ChevronRight, Star, Receipt, Lightbulb, Activity as ActivityIcon, CornerDownLeft, X, WifiOff,
 } from 'lucide-react';
-import { api, qs } from '../lib/api.js';
+import { api, clearLocalData, qs } from '../lib/api.js';
 import { connectLive } from '../lib/live.js';
 import { useAuth, useCan, useDebounced, useFavorites, useIsMobile, useMe, usePref, useProjects } from '../lib/hooks.js';
 import { Avatar, IconButton, Snippet, Spinner, Button } from './ui.jsx';
@@ -182,6 +182,7 @@ function Sidebar({ open }) {
 
   const logout = async () => {
     await api.post('/auth/logout');
+    clearLocalData();
     qc.clear();
     navigate('/login');
     qc.invalidateQueries({ queryKey: ['auth'] });

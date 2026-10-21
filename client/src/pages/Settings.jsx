@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { User, SlidersHorizontal, Bell, Building2, Shield, Zap, LayoutTemplate, DatabaseBackup, Plus, Trash2, Download, Mail, Info, Camera } from 'lucide-react';
-import { api, uploadFiles } from '../lib/api.js';
+import { api, clearLocalData, uploadFiles } from '../lib/api.js';
 import { STATUSES, PRIORITIES } from '../lib/constants.js';
 import { fileSize, fmtDateTime, timeAgo, centsToInput, parseMoney } from '../lib/format.js';
 import { useAction, useCan, useMe, usePref, useActiveMembers, useProjects, useIsMobile } from '../lib/hooks.js';
@@ -122,7 +122,33 @@ function Profile() {
         </div>
         <Button disabled={!pw.current || pw.next.length < 8} loading={changePw.isPending} onClick={() => changePw.mutate()}>Actualizar contraseña</Button>
       </div>
+
+      <div className="section" style={{ marginTop: 40 }}>
+        <h3 style={{ fontSize: 16 }} className="mb-2">Sesiones</h3>
+        <p className="muted small mb-3">Si entraste desde una computadora prestada y olvidaste cerrar sesión, ciérrala en todos los equipos. Tendrás que volver a entrar aquí también.</p>
+        <LogoutAllButton />
+      </div>
     </>
+  );
+}
+
+function LogoutAllButton() {
+  const confirm = useConfirm();
+  const qc = useQueryClient();
+  const run = useAction(() => api.post('/auth/logout-all'), {
+    onSuccess: () => {
+      clearLocalData();
+      qc.clear();
+      window.location.href = '/login';
+    },
+  });
+  return (
+    <Button
+      loading={run.isPending}
+      onClick={async () => (await confirm({ title: '¿Cerrar sesión en todos los equipos?', message: 'Se cerrará tu sesión en todas las computadoras y teléfonos, incluida esta.', confirmLabel: 'Cerrar todas', danger: true })) && run.mutate()}
+    >
+      Cerrar sesión en todos los equipos
+    </Button>
   );
 }
 
