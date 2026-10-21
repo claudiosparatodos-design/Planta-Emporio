@@ -12,6 +12,8 @@ before(async () => {
   socio = await addMember(srv, admin, { name: 'Sofía Socia', email: 'sofia@example.test', role: 'Socio' });
   member = await addMember(srv, admin, { name: 'Iván Integrante', email: 'ivan@example.test', role: 'Integrante' });
   const meta = await admin.ok('GET', '/api/finance/meta');
+  assert.ok(meta.payment_methods.includes('Transferencia'), 'métodos de pago predeterminados');
+  assert.ok(meta.contribution_types.includes('Capital'), 'tipos de aportación predeterminados');
   caja = meta.accounts.find((a) => a.name === 'Caja principal');
   assert.equal(caja.balance_cents, 0, 'la cuenta inicial empieza en cero');
   const { id } = await admin.ok('POST', '/api/finance/accounts', { name: 'Banco', type: 'bank', initial_balance_cents: 100000 });

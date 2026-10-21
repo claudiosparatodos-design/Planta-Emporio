@@ -182,6 +182,7 @@ router.post(
     if (mailConfigured()) {
       mail = await sendMail({
         to: email,
+        fromName: getSetting('workspace_name'),
         subject: `${req.user.name} te invitó a ${getSetting('workspace_name')}`,
         text: `Hola:\n\n${req.user.name} te invitó al espacio de trabajo de ${getSetting('workspace_name')}.\nCrea tu cuenta con este enlace (válido 7 días):\n${link}`,
       });

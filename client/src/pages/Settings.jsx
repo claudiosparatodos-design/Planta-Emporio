@@ -221,16 +221,55 @@ function Workspace() {
       <div className="form-actions"><Button variant="primary" loading={save.isPending} onClick={() => save.mutate()}>Guardar</Button></div>
 
       <div className="section">
-        <Callout icon={Info} title="Servicios externos">
-          <div className="small">
-            Correo: {data.mail_configured ? 'configurado (se envían invitaciones y recuperación de contraseña).' : 'no configurado. Las invitaciones y recuperaciones se comparten con enlace.'}
-            <br />Almacenamiento: hasta {data.storage_quota_mb} MB en total, {data.max_file_mb} MB por archivo.
-            <br />No hay conexiones con bancos ni servicios de pago. Requieren tu autorización expresa y una evaluación de seguridad antes de activarse.
+        <h3 style={{ fontSize: 15 }} className="mb-2">Servicios</h3>
+        <div className="card" style={{ padding: 6 }}>
+          <div className="list-row" style={{ alignItems: 'flex-start', padding: 10 }}>
+            <Mail size={16} className="faint" style={{ marginTop: 2 }} />
+            <div className="grow">
+              <div style={{ fontWeight: 550 }}>Correo</div>
+              <div className="faint small">
+                {data.mail_configured
+                  ? `Activo con ${data.mail_provider === 'brevo' ? 'Brevo' : 'SMTP'}${data.mail_from ? `, remitente ${data.mail_from}` : ''}. Se envían invitaciones y recuperación de contraseña.`
+                  : 'No configurado. Las invitaciones y recuperaciones se comparten con un enlace.'}
+              </div>
+            </div>
+            {data.mail_configured && <TestEmailButton />}
           </div>
-        </Callout>
+          <div className="list-row" style={{ alignItems: 'flex-start', padding: 10 }}>
+            <DatabaseBackup size={16} className="faint" style={{ marginTop: 2 }} />
+            <div className="grow">
+              <div style={{ fontWeight: 550 }}>Almacenamiento de datos</div>
+              <div className="faint small"><StorageStatus storage={data.storage} /></div>
+              <div className="faint tiny mt-1">Archivos: hasta {data.storage_quota_mb} MB en total, {data.max_file_mb} MB por archivo.</div>
+            </div>
+          </div>
+        </div>
+        <p className="faint small mt-2">No hay conexiones con bancos ni servicios de pago. Requieren tu autorización expresa y una evaluación de seguridad antes de activarse.</p>
       </div>
     </>
   );
+}
+
+function TestEmailButton() {
+  const test = useAction(() => api.post('/settings/test-email'), { success: (r) => `Correo de prueba enviado a ${r.to}. Revisa también la carpeta de spam.` });
+  return <Button size="sm" loading={test.isPending} onClick={() => test.mutate()}>Enviar correo de prueba</Button>;
+}
+
+export function StorageStatus({ storage }) {
+  if (!storage) return null;
+  if (storage.mode === 'turso') {
+    return (
+      <>
+        Respaldo continuo en Turso activo.
+        {storage.lastSyncAt && ` Último envío de cambios ${timeAgo(storage.lastSyncAt)}.`}
+        {storage.lastSnapshotAt && ` Última copia completa ${timeAgo(storage.lastSnapshotAt)}.`}
+        {storage.pending > 0 && ` ${storage.pending} cambio(s) por enviar.`}
+        {storage.error && <span style={{ color: 'var(--danger)' }}> Error reciente: {storage.error}</span>}
+      </>
+    );
+  }
+  if (storage.mode === 'ephemeral') return <span style={{ color: 'var(--danger)' }}>El disco de este alojamiento se borra y Turso no está configurado: los datos NO son permanentes.</span>;
+  return 'En el disco del servidor (carpeta data/), con copia diaria automática.';
 }
 
 function Roles() {
@@ -446,6 +485,7 @@ function Templates() {
 
 function Backups() {
   const { data = [], isLoading } = useQuery({ queryKey: ['backups'], queryFn: () => api.get('/backups') });
+  const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.get('/settings') });
   const create = useAction(() => api.post('/backups'), { invalidate: ['backups'], success: 'Respaldo creado' });
   return (
     <>
@@ -453,6 +493,9 @@ function Backups() {
       <Callout icon={Info} title="Guarda copias fuera del servidor">
         <span className="small">Descarga un respaldo de vez en cuando y guárdalo en un lugar seguro (contiene información privada de la empresa). Los archivos subidos se guardan en la carpeta <code>data/uploads</code> del servidor y también conviene respaldarla.</span>
       </Callout>
+      {settings?.storage?.mode === 'turso' && (
+        <div className="mt-3"><Callout tone="success" icon={DatabaseBackup} title="Copia permanente en Turso"><span className="small"><StorageStatus storage={settings.storage} /> Se conserva además una copia completa por día de la última semana en Turso. Las copias de esta lista se guardan en el disco del servidor, que en el plan gratuito se borra: descárgalas si las quieres conservar.</span></Callout></div>
+      )}
       <div className="flex mt-4 mb-3"><span className="spacer" style={{ flex: 1 }} /><Button variant="primary" icon={DatabaseBackup} loading={create.isPending} onClick={() => create.mutate()}>Crear respaldo ahora</Button></div>
       {isLoading ? <Loading /> : !data.length ? <EmptyState compact title="Aún no hay respaldos" /> : (
         <div className="card" style={{ padding: 6 }}>

@@ -17,6 +17,8 @@ import { obligationsWithStatus } from '../lib/finance.js';
 import { recentActivity } from './dashboard.js';
 import { workspaceInfo } from '../lib/workspace.js';
 import { runBackup } from '../lib/scheduler.js';
+import { deleteFileRemote, mirrorEnabled, mirrorStatus } from '../lib/mirror.js';
+import { mailProvider, sendMail } from '../lib/mailer.js';
 
 const router = Router();
 
@@ -613,6 +615,7 @@ router.post(
     transaction(() => {
       if (type === 'file') {
         fs.rmSync(path.join(config.uploadsDir, path.basename(row.stored_name)), { force: true });
+        deleteFileRemote(path.basename(row.stored_name)).catch((e) => console.error('[turso]', e.message));
         db.run("DELETE FROM links WHERE b_type = 'file' AND b_id = ?", id);
         db.run('UPDATE users SET avatar_file_id = NULL WHERE avatar_file_id = ?', id);
       }
@@ -643,7 +646,10 @@ router.get(
       approval_threshold_cents: getSetting('approval_threshold_cents', null),
       payment_methods: getSetting('payment_methods', []),
       contribution_types: getSetting('contribution_types', []),
-      mail_configured: Boolean(config.smtp),
+      mail_configured: Boolean(mailProvider()),
+      mail_provider: mailProvider(),
+      mail_from: config.mailFrom || null,
+      storage: mirrorEnabled() ? { mode: 'turso', ...mirrorStatus() } : { mode: config.ephemeralHost ? 'ephemeral' : 'local' },
       public_url: config.publicUrl || null,
       max_file_mb: config.maxFileMb,
       storage_quota_mb: config.storageQuotaMb,
@@ -686,6 +692,23 @@ router.patch(
     if (changes.length) logActivity({ actor: req.user, entityType: 'workspace', action: 'settings', summary: `cambió ${changes.join(', ')} del espacio` });
     emit(['settings', 'me', 'finance', 'dashboard']);
     res.json({ ok: true });
+  }),
+);
+
+/** Envía un correo de prueba a quien lo solicita para comprobar la configuración. */
+router.post(
+  '/settings/test-email',
+  handler(async (req, res) => {
+    requirePermission(req.user, 'settings.manage');
+    if (!mailProvider()) throw new HttpError(400, 'No hay un proveedor de correo configurado en el servidor.');
+    const result = await sendMail({
+      to: req.user.email,
+      fromName: getSetting('workspace_name'),
+      subject: `Prueba de correo · ${getSetting('workspace_name')}`,
+      text: `Hola ${req.user.name}:\n\nSi lees esto, el envío de correos de ${getSetting('workspace_name')} funciona correctamente.`,
+    });
+    if (!result.sent) throw new HttpError(502, `El proveedor de correo rechazó el envío: ${result.error || 'error desconocido'}`);
+    res.json({ ok: true, to: req.user.email });
   }),
 );
 

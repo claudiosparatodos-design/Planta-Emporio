@@ -1,0 +1,31 @@
+# Despliegue gratuito en Render (plan Free, sin tarjeta).
+# Los datos se guardan de forma permanente en Turso (gratis) y el correo sale por Brevo (gratis).
+# Guía paso a paso: docs/DESPLIEGUE-GRATIS.md
+services:
+  - type: web
+    name: planta-emporio
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: node --disable-warning=ExperimentalWarning server/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.22.0
+      - key: NODE_ENV
+        value: production
+      # Turso: base de datos gratuita donde se guarda todo (obligatorio en el plan gratuito)
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+      # Brevo: envío de correos gratis (opcional; sin esto se comparten enlaces)
+      - key: BREVO_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      # Límites pensados para los 5 GB gratuitos de Turso
+      - key: MAX_FILE_MB
+        value: "10"
+      - key: STORAGE_QUOTA_MB
+        value: "3500"

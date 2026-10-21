@@ -12,8 +12,18 @@ export const config = {
   backupsDir: path.join(dataDir, 'backups'),
   port: Number(process.env.PORT || 3000),
   production: process.env.NODE_ENV === 'production',
-  /** URL pública con la que se generan enlaces de invitación y recuperación. */
-  publicUrl: (process.env.PUBLIC_URL || '').replace(/\/$/, ''),
+  /** URL pública con la que se generan enlaces de invitación y recuperación (Render la define sola). */
+  publicUrl: (process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/$/, ''),
+  /**
+   * Respaldo continuo en Turso (base de datos SQLite gratuita en la nube). Necesario en alojamientos sin
+   * disco permanente, como el plan gratuito de Render: cada cambio se copia y se restaura al arrancar.
+   */
+  turso: process.env.TURSO_DATABASE_URL ? { url: process.env.TURSO_DATABASE_URL, authToken: process.env.TURSO_AUTH_TOKEN } : null,
+  /** Alojamiento cuyo disco se borra (Render). Sin Turso, los datos se perderían: se avisa en la interfaz. */
+  ephemeralHost: process.env.RENDER === 'true' || process.env.EPHEMERAL_DISK === 'true',
+  /** Correo por API HTTPS de Brevo (plan gratuito); funciona aunque el alojamiento bloquee SMTP. */
+  brevo: process.env.BREVO_API_KEY ? { apiKey: process.env.BREVO_API_KEY } : null,
+  mailFrom: process.env.MAIL_FROM || process.env.SMTP_FROM || process.env.SMTP_USER || '',
   maxFileMb: Number(process.env.MAX_FILE_MB || 25),
   storageQuotaMb: Number(process.env.STORAGE_QUOTA_MB || 5120),
   sessionDays: 30,

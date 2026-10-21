@@ -6,6 +6,7 @@ import { notify } from './notify.js';
 import { enabledRules, markRun, resolveTargets, taskContext } from './automations.js';
 import { obligationsWithStatus } from './finance.js';
 import { addDays, today } from './workspace.js';
+import { mirrorEnabled } from './mirror.js';
 
 /** Marca un aviso como enviado. Devuelve false si ya se había enviado (evita duplicados). */
 function once(key) {
@@ -127,7 +128,8 @@ export function runBackup(label = 'auto') {
 }
 
 function dailyBackup() {
-  if (config.dbFile === ':memory:') return;
+  // Con Turso las copias diarias ya se guardan fuera del servidor.
+  if (config.dbFile === ':memory:' || mirrorEnabled()) return;
   const last = getSetting('last_backup_at', null);
   if (last && Date.now() - Date.parse(last) < 24 * 3600e3) return;
   if (!db.get('SELECT 1 FROM users')) return;

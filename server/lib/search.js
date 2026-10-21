@@ -71,3 +71,17 @@ function inlineToText(content) {
     })
     .join('');
 }
+
+/** Reconstruye todo el índice de búsqueda desde los datos (p. ej. tras restaurar desde Turso). */
+export function reindexAll() {
+  db.run('DELETE FROM search_index');
+  const ins = (type, sql) => db.run(`INSERT INTO search_index (entity_type, entity_id, title, body) SELECT '${type}', ${sql}`);
+  ins('task', `t.id, t.title, t.description || char(10) || COALESCE((SELECT group_concat(text, char(10)) FROM checklist_items c WHERE c.task_id = t.id), '') FROM tasks t WHERE t.deleted_at IS NULL`);
+  ins('project', `id, name, description || char(10) || objective || char(10) || expected_result FROM projects WHERE deleted_at IS NULL`);
+  ins('page', `id, title, content_text FROM pages WHERE deleted_at IS NULL`);
+  ins('meeting', `id, title, objective || char(10) || agenda || char(10) || notes || char(10) || location FROM meetings WHERE deleted_at IS NULL`);
+  ins('decision', `id, title, description FROM decisions WHERE deleted_at IS NULL`);
+  ins('goal', `id, title, description FROM goals WHERE deleted_at IS NULL`);
+  ins('file', `id, name, '' FROM files WHERE deleted_at IS NULL`);
+  ins('message', `id, '', body FROM messages WHERE deleted_at IS NULL`);
+}

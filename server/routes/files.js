@@ -11,6 +11,7 @@ import { logActivity } from '../lib/activity.js';
 import { emit } from '../lib/events.js';
 import { indexEntity, unindexEntity } from '../lib/search.js';
 import { addLink, entitySummary, fileView, ENTITY_TYPES } from '../lib/entities.js';
+import { deleteFileRemote, fetchFileRemote, storeFileRemote } from '../lib/mirror.js';
 
 const router = Router();
 fs.mkdirSync(config.uploadsDir, { recursive: true });
@@ -85,9 +86,13 @@ router.get(
 router.post(
   '/',
   upload.array('files', 10),
-  handler((req, res) => {
+  handler(async (req, res) => {
     const files = req.files || [];
-    const cleanup = () => files.forEach((f) => fs.rm(f.path, { force: true }, () => {}));
+    const cleanup = () =>
+      files.forEach((f) => {
+        fs.rm(f.path, { force: true }, () => {});
+        deleteFileRemote(path.basename(f.path)).catch(() => {});
+      });
     try {
       if (!files.length) throw new HttpError(400, 'No se recibió ningún archivo.');
       const incoming = files.reduce((s, f) => s + f.size, 0);
@@ -104,6 +109,13 @@ router.post(
       if (linkType) {
         if (!linkId || !entitySummary(req.user, linkType, linkId)) throw new HttpError(400, 'El elemento a vincular no existe.');
         if (linkType === 'transaction') visibility = 'finance'; // los comprobantes son información financiera
+      }
+      // Con respaldo en Turso, el archivo se guarda allí antes de confirmar la subida.
+      try {
+        for (const f of files) await storeFileRemote(path.basename(f.path), f.path);
+      } catch (err) {
+        console.error('[turso] Error al guardar archivo:', err.message);
+        throw new HttpError(503, 'No se pudo guardar el archivo de forma permanente. Intenta de nuevo en un momento.');
       }
       const created = transaction(() =>
         files.map((f) => {
@@ -151,10 +163,12 @@ router.get(
 /** Contenido del archivo. Solo después de validar sesión y permisos. */
 router.get(
   '/:id/raw',
-  handler((req, res) => {
+  handler(async (req, res) => {
     const f = getFile(req.user, Number(req.params.id));
     const full = path.join(config.uploadsDir, path.basename(f.stored_name));
-    if (!fs.existsSync(full)) throw new HttpError(404, 'El archivo ya no está disponible en el servidor.');
+    if (!fs.existsSync(full) && !(await fetchFileRemote(path.basename(f.stored_name), full))) {
+      throw new HttpError(404, 'El archivo ya no está disponible en el servidor.');
+    }
     const inline = !req.query.download && INLINE_TYPES.test(f.mime);
     res.set({
       'Content-Type': inline ? f.mime : 'application/octet-stream',

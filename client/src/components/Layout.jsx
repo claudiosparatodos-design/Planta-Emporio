@@ -46,6 +46,7 @@ export default function Layout() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [create, setCreate] = useState(null);
   const [online, setOnline] = useState(true);
+  const { data: auth } = useAuth();
 
   useEffect(() => connectLive(qc, { onStatus: (s) => setOnline(s === 'online') }), [qc]);
   useEffect(() => setSidebarOpen(false), [location.pathname]);
@@ -119,6 +120,11 @@ export default function Layout() {
         <main className="main">
           {!online && (
             <div className="offline-bar"><WifiOff size={12} style={{ verticalAlign: -1, marginRight: 6 }} />Reconectando… los cambios de otros pueden tardar en aparecer.</div>
+          )}
+          {auth?.storageWarning && (
+            <div className="offline-bar" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>
+              Los datos no se están guardando de forma permanente: este alojamiento borra su disco. Configura Turso (ver docs/DESPLIEGUE-GRATIS.md).
+            </div>
           )}
           <Outlet />
         </main>

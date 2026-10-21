@@ -132,7 +132,7 @@ Todas se ejecutaron en este entorno y pasaron:
 
 | Conjunto | Resultado |
 |---|---|
-| `npm test` — integración de la API con base de datos temporal | **40 / 40** |
+| `npm test` — integración de la API con base de datos temporal | **46 / 46** |
 | `npm run test:e2e` — recorridos en navegador (Chromium) | **13 / 13** |
 
 **API (40):** configuración inicial, inicio de sesión, CSRF, invitaciones de un solo uso, recuperación de
@@ -187,28 +187,39 @@ capitalizados.
   adelantado).
 - **Finanzas:** registro administrativo con criterio de caja; **no es contabilidad fiscal** (sin facturación,
   impuestos ni conciliación bancaria). Quien tiene permiso de aprobar no queda bloqueado por presupuestos.
+- **Plan gratuito de Render:** se duerme tras 15 minutos sin uso (la siguiente visita tarda ~1 minuto) y los
+  recordatorios no corren mientras duerme, salvo que se use un monitor gratuito que la mantenga despierta.
 - **Escala:** pensada para un equipo pequeño en un solo servidor (SQLite). No se hicieron pruebas de carga;
   si la empresa creciera a muchas decenas de personas conectadas a la vez, convendría revisarlo.
 - **IA:** no implementada (ver recomendaciones).
 
 ---
 
-## 5. Decisiones que necesitan tu aprobación
+## 5. Alojamiento, correo e IA (decisiones tomadas)
 
-No se activó nada que implique costo, servicios externos o datos sensibles fuera del servidor:
+Se decidió **no gastar dinero**:
 
-1. **Alojamiento y dominio** (costo mensual). Opciones típicas: un VPS pequeño (≈ 5–7 USD/mes) con Caddy para
-   HTTPS, o plataformas como Railway, Fly.io o Render. Requiere un dominio (≈ 10–15 USD/año).
-2. **Correo SMTP** para invitaciones y recuperación (el correo de tu dominio o un servicio transaccional).
-3. **Respaldo fuera del servidor** (por ejemplo, copiar `data/` a un almacenamiento externo cada noche).
-4. **Asistente con IA** (costo por uso de un proveedor de IA).
-5. **Conexión con bancos o pagos:** no recomendada por ahora; requeriría evaluación de seguridad.
+1. **Alojamiento gratuito: Render + Turso**, sin tarjeta. Netlify/Vercel no sirven porque no ejecutan un
+   servidor permanente ni tienen disco. El plan gratuito de Render borra su disco al dormir, así que se agregó un
+   **respaldo continuo en Turso**: cada cambio se envía en segundos, los archivos se guardan antes de confirmar la
+   subida y todo se restaura al arrancar (probado borrando el disco por completo). Guía:
+   [DESPLIEGUE-GRATIS.md](DESPLIEGUE-GRATIS.md).
+2. **Correo gratuito con Brevo** (300 correos/día) por su API HTTPS, porque el plan gratuito de Render bloquea
+   SMTP. Incluye botón de correo de prueba. Sin dominio propio algunos correos pueden llegar a spam.
+3. **Sin asistente con IA.** Existen planes gratuitos de algunos proveedores, pero tienen límites que cambian y
+   en varios casos permiten usar los datos enviados para entrenar sus modelos; no conviene mandar la información
+   privada de la empresa así. Queda como posible etapa futura.
+4. **Conexión con bancos o pagos:** no se agregó; requeriría evaluación de seguridad.
+
+Las cuentas de Render, Turso y Brevo las debe crear el dueño del proyecto (no se pueden crear desde aquí);
+la guía explica cada paso. Esta parte se probó simulando Turso con una base local y Brevo interceptando la
+llamada; la conexión real con esos servicios se verá al publicar.
 
 ---
 
 ## 6. Recomendaciones para siguientes etapas
 
-1. **Desplegar** con HTTPS y respaldo externo automático (lo más importante para empezar a usarla a diario).
+1. **Publicarla** siguiendo [DESPLIEGUE-GRATIS.md](DESPLIEGUE-GRATIS.md) (lo más importante para empezar a usarla a diario).
 2. **Aplicación instalable (PWA)** con notificaciones push en el teléfono y modo sin conexión para capturar.
 3. **Resumen semanal por correo** (tareas vencidas, decisiones pendientes, números del mes).
 4. **Asistente con IA** que solo use lo que cada persona puede ver y nunca modifique finanzas ni envíe

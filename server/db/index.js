@@ -19,6 +19,9 @@ export function openDatabase(file = config.dbFile) {
   return database;
 }
 
+/** Conexión nativa (para el respaldo continuo, que necesita sesiones de SQLite). */
+export const rawDatabase = () => database;
+
 export function closeDatabase() {
   if (database) database.close();
   database = null;

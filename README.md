@@ -8,7 +8,7 @@ objetivos, archivos y finanzas**, todo conectado y en un solo lugar.
 - Permisos por rol validados en el servidor; nada privado se ve solo por conocer una URL.
 - Los cambios llegan en tiempo real a los demás integrantes.
 
-📄 [Arquitectura](docs/ARQUITECTURA.md) · 📋 [Informe del proyecto](docs/INFORME.md)
+🚀 [Publicarla gratis](docs/DESPLIEGUE-GRATIS.md) · 📄 [Arquitectura](docs/ARQUITECTURA.md) · 📋 [Informe del proyecto](docs/INFORME.md)
 
 ## Requisitos
 
@@ -25,6 +25,11 @@ Abre <http://localhost:5173>. La primera vez la aplicación pide el nombre de la
 administración. Después, en **Integrantes → Invitar**, genera un enlace para cada socio.
 
 Los datos se guardan en la carpeta `data/` (base de datos, archivos subidos y respaldos). Está excluida de Git.
+
+## Publicarla gratis (Render + Turso + Brevo)
+
+Sin tarjeta de crédito y sin costo: sigue la guía [docs/DESPLIEGUE-GRATIS.md](docs/DESPLIEGUE-GRATIS.md).
+El archivo [`render.yaml`](render.yaml) configura Render automáticamente.
 
 ## Producción (servidor propio)
 
@@ -44,14 +49,17 @@ docker run -d -p 3000:3000 -v planta-data:/data -e PUBLIC_URL=https://tu-dominio
 Debe publicarse **detrás de HTTPS** (por ejemplo con Caddy o el proxy del proveedor): las cookies de sesión
 se marcan como seguras en producción. Variables disponibles en [`.env.example`](.env.example).
 
-> Elegir dónde alojarlo (un VPS pequeño, Railway, Fly.io, Render, un equipo propio…) implica un costo mensual
-> y un dominio. Esa decisión queda pendiente de tu aprobación; ver el informe.
+En un servidor con disco permanente no hace falta Turso. En alojamientos cuyo disco se borra (como el plan
+gratuito de Render), define `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN`: cada cambio y cada archivo se copian a
+Turso y se restauran al arrancar.
 
 ### Correo (opcional)
 
-Sin SMTP la plataforma funciona completa: las invitaciones y la recuperación de contraseña se comparten con un
+Sin correo la plataforma funciona completa: las invitaciones y la recuperación de contraseña se comparten con un
 enlace que genera un administrador, y las notificaciones son dentro de la aplicación. Nunca se simula un envío.
-Para enviar correos, configura `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` y `SMTP_FROM`.
+Para enviar correos gratis usa Brevo (`BREVO_API_KEY` y `MAIL_FROM`), que funciona aunque el alojamiento bloquee
+SMTP; o un servidor SMTP propio (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`). En **Configuración →
+Espacio de trabajo** hay un botón para enviar un correo de prueba.
 
 ## Respaldos
 
@@ -63,7 +71,7 @@ Para enviar correos, configura `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` y `SMTP_FRO
 ## Pruebas
 
 ```bash
-npm test           # 40 pruebas de integración de la API (base de datos temporal)
+npm test           # 46 pruebas de integración de la API (incluye respaldo en Turso y correo)
 npm run test:e2e   # 13 recorridos en navegador con Playwright (incluye móvil)
 ```
 

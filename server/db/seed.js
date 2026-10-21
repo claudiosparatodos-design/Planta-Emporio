@@ -31,7 +31,8 @@ export function seed() {
     onboarding_dismissed: false,
   };
   for (const [key, value] of Object.entries(defaults)) {
-    if (getSetting(key, undefined) === undefined) setSetting(key, value);
+    // Solo se escriben los ajustes que faltan (también completa bases creadas antes de existir un ajuste).
+    if (!db.get('SELECT 1 FROM settings WHERE key = ?', key)) setSetting(key, value);
   }
 
   if (!getSetting('seeded_automations', false)) {

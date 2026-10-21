@@ -15,6 +15,7 @@ import {
   verifyPassword,
 } from '../lib/auth.js';
 import { mailConfigured, sendMail } from '../lib/mailer.js';
+import { config } from '../config.js';
 import { logActivity } from '../lib/activity.js';
 import { publicUrl, workspaceInfo } from '../lib/workspace.js';
 import { ensureGeneralChannel } from '../lib/chat.js';
@@ -41,6 +42,8 @@ router.get(
       user: user ? meResponse(user) : null,
       workspace: workspaceInfo(),
       mailConfigured: mailConfigured(),
+      // Aviso solo para administración: el alojamiento borra el disco y no hay respaldo continuo.
+      storageWarning: Boolean(user?.is_admin && config.ephemeralHost && !config.turso),
     });
   }),
 );
@@ -208,6 +211,7 @@ router.post(
       const token = createResetToken(user.id, null);
       await sendMail({
         to: user.email,
+        fromName: getSetting('workspace_name'),
         subject: `Recupera tu acceso a ${getSetting('workspace_name')}`,
         text: `Hola ${user.name}:\n\nPara crear una nueva contraseña abre este enlace (válido por 2 horas):\n${publicUrl(req)}/reset/${token}\n\nSi no lo pediste, ignora este mensaje.`,
       });
